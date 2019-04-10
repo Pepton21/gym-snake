@@ -132,47 +132,51 @@ class Game():
     def perform_actions(self, actions):
         info = []
         for i in range(len(actions)):
-            result = self.snakes[i].take_action(actions[i])
-            info.append("Snake {} performed {}".format(i, result))
+            if self.snakes[i] != None:
+                result = self.snakes[i].take_action(actions[i])
+                info.append("Snake {} performed {}".format(i, result))
         return info
 
     def outcome(self):
         rewards = np.zeros((self.num_snakes,), dtype=int)
         info = []
         for id in self.snakes.keys():
-            head = self.snakes[id].get_head()
-            if self.grid[head[0], head[1]] == Cell.WALL.value:
-                rewards[id] += Reward.DEATH.value
-                self.snakes[id] = None
-                self.dead_count += 1
-                info.append("Snake {} hit a wall!".format(id))
-            else:
-                for id2 in self.snakes.keys():
-                    if id2 != id:
-                        if head in self.snakes[id2].body:
-                            rewards[id2] += Reward.KILL.value
-                            rewards[id] += Reward.DEATH.value
-                            self.snakes[id] = None
-                            self.dead_count += 1
-                            info.append("Snake {} got killed by snake {}!".format(id, id2))
-                    else:
-                        print(id, id2, self.snakes[id].body)
-                        for i in range(len(self.snakes[id].body)-1):
-                            a = self.snakes[id].body
-                            print(a)
-                            if np.array_equal(a[i], head):
-                                rewards[id] += Reward.DEATH.value
-                                self.snakes[id] = None
-                                self.dead_count += 1
-                                info.append("Snake {} killed itself!".format(id))
-                                break
+            if self.snakes[id] != None:
+                head = self.snakes[id].get_head()
+                if self.grid[head[0], head[1]] == Cell.WALL.value:
+                    rewards[id] += Reward.DEATH.value
+                    self.snakes[id] = None
+                    self.dead_count += 1
+                    info.append("Snake {} hit a wall!".format(id))
+                else:
+                    for id2 in self.snakes.keys():
+                        if id2 != id:
+                            if self.snakes[id2] != None:
+                                for i in range(len(self.snakes[id2].body)):
+                                    body = self.snakes[id2].body
+                                    if np.array_equal(body[i], head):
+                                        rewards[id2] += Reward.KILL.value
+                                        rewards[id] += Reward.DEATH.value
+                                        self.snakes[id] = None
+                                        self.dead_count += 1
+                                        info.append("Snake {} got killed by snake {}!".format(id, id2))
+                        else:
+                            if self.snakes[id] != None:
+                                for i in range(len(self.snakes[id].body)-1):
+                                    body = self.snakes[id].body
+                                    if np.array_equal(body[i], head):
+                                        rewards[id] += Reward.DEATH.value
+                                        self.snakes[id] = None
+                                        self.dead_count += 1
+                                        info.append("Snake {} killed itself!".format(id))
+                                        break
 
-            if self.grid[head[0], head[1]] == Cell.SNACK.value:
-                rewards[id] += Reward.SNACK.value
-                info.append("Snake {}found a snack!".format(id))
-            if rewards[id] != Reward.SNACK.value:
-                if self.snakes[id] != None:
-                    self.snakes[id].cut_tail()
+                if self.grid[head[0], head[1]] == Cell.SNACK.value:
+                    rewards[id] += Reward.SNACK.value
+                    info.append("Snake {}found a snack!".format(id))
+                if rewards[id] != Reward.SNACK.value:
+                    if self.snakes[id] != None:
+                        self.snakes[id].cut_tail()
         return rewards, info
 
     def step(self, actions):
@@ -181,6 +185,7 @@ class Game():
         for action in actions:
             info[len(info)] = action
         reward, events = self.outcome()
+        print(self.dead_count, self.num_snakes)
         done = self.dead_count == self.num_snakes
         for event in events:
             info[len(info)] = event
@@ -242,14 +247,15 @@ class SnakeEnv(gym.Env):
 
         for key in self.game.snakes.keys():
             snake = self.game.snakes[key]
-            for segment in snake.body:
-                x = segment[0]
-                y = segment[1]
-                l, r, t, b = x * width_scaling_factor, (x + 1) * width_scaling_factor, y * height_scaling_factor, (
-                        y + 1) * height_scaling_factor
-                square = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
-                square.set_color(snake.color[0], snake.color[1], snake.color[2])
-                self.viewer.add_onetime(square)
+            if snake != None:
+                for segment in snake.body:
+                    x = segment[0]
+                    y = segment[1]
+                    l, r, t, b = x * width_scaling_factor, (x + 1) * width_scaling_factor, y * height_scaling_factor, (
+                            y + 1) * height_scaling_factor
+                    square = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
+                    square.set_color(snake.color[0], snake.color[1], snake.color[2])
+                    self.viewer.add_onetime(square)
 
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 

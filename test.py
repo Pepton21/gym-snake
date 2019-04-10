@@ -7,12 +7,14 @@ from gym_snake.envs import SnakeEnv
 
 #env = gym.make('CartPole-v0')
 env = SnakeEnv()
-for i_episode in range(20):
+env.add_snake((5,7))
+env.add_snake((9,7))
+for i_episode in range(100):
     observation = env.reset()
     for t in range(100):
         env.render()
-        time.sleep(0.1)
-        #print(observation)
+        time.sleep(0.2)
+        print(observation)
 
         action = env.action_space.sample()
         print('action:',action)
